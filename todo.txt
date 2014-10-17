@@ -1,0 +1,23 @@
+README.md and other pretty things for github.
+
+Convert this todo to a wiki
+
+Parse the test file
+
+Find errors and fix them, espeically double-quote errors.
+
+Figure out the format -- probably
+    a table of all email addresses
+    a table of who emailed who how many times
+    One table per time period, or chop by days or somesuch, and aggrigate into weeks.
+
+Automatically download and unzip the test data from foreverdata.
+
+Automatically apply a diff to fix known typos
+
+Figure out how to upload just the data into the maven repo.
+
+Match email addresses to people to avoid duplicate email addresses.
+
+See trial outcomes and plea bargains.
+
