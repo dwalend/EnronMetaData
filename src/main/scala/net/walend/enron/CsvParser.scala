@@ -1,68 +1,44 @@
 package net.walend.enron
 
 /**
- * Parse the CSVs to a List[List[String]]
- *
- * shamelessly started as a cut-paste from https://github.com/sirthias/parboiled2/blob/master/examples/src/main/scala/org/parboiled2/examples/CsvParser.scala
+ * Parse the CSVs to an Iteratable[List[String]]
  *
  * @author dwalend
  * @since v0.0.0
  */
 
-import org.parboiled2.ParserInput.ByteArrayBasedParserInput
+import scala.annotation.tailrec
 
-import scala.collection.immutable
-import org.parboiled2._
+object CsvParser {
 
-object CsvParser extends {
 
-  case class CsvFile(header: Option[Record], records: immutable.Seq[Record])
-  case class Record(fields: immutable.Seq[String])
-  case class Error(msg: String)
+//todo not working. Just rip the line  @tailrec
+  def parseStrings(line:Int,string:String,index:Int):List[String] = {
 
-  /**
-   * Parses the given input into a [[CsvFile]] or an [[Error]] instance.
-   */
-  def apply(input: ParserInput, headerPresent: Boolean = true, fieldDelimiter: Char = ','): Either[Error, CsvFile] = {
-    import Parser.DeliveryScheme.Either
-    val parser = new CsvParser(input, headerPresent, fieldDelimiter)
-    parser.file.run().left.map(error => Error(parser.formatError(error)))
+    //Scan through the string, looking for commas or double quotes, build up a substring in a StringBuilder
+    val nextComma = string.indexOf(',',index)
+//    val nextDoubleQuote = string.indexOf('"',index)
+    val nextStart = nextComma + 1
+
+    if (nextComma == -1) List(string.substring(index))
+    else (string.substring(index, nextComma))::parseStrings(line, string, nextStart)
   }
 
-  private val `TEXTDATA-BASE` = CharPredicate.Printable -- '"'
-  private val QTEXTDATA = `TEXTDATA-BASE` // ++ "\r\n"
+  def parseLine(line:Int,string:String):Either[Problem,List[String]] = {
+
+    //Scan through the string, looking for commas or double quotes, build up a substring in a StringBuilder
+
+    //When you find a comma, add the string to the existing Seq[String], then keep looking (recursive?)
+
+    //When you find a double quote, change modes until you find the closing quote. (Problem if you don't find it.)
+    Right(parseStrings(line,string,0))
+  }
+
+
 }
 
-/**
- * Simple, fast CSV parser.
- *
- * See http://tools.ietf.org/html/rfc4180#section-2
- */
-class CsvParser(val input: ParserInput, headerPresent: Boolean, fieldDelimiter: Char) extends Parser with StringBuilding {
-  import CsvParser._
+case class Problem(line:Int,description:String)
 
-  val TEXTDATA = `TEXTDATA-BASE` -- fieldDelimiter
-
-  def file = rule {
-    OWS ~ optional(test(headerPresent) ~ header ~ NL) ~ oneOrMore(record).separatedBy(NL) ~ optional(NL) ~ EOI ~> CsvFile
-  }
-
-  def header = rule { record }
-
-  def record = rule { oneOrMore(field).separatedBy(fieldDelimiter ~ OWS) ~> Record }
-
-  def field = rule { `quoted-field` | `unquoted-field` }
-
-  def `quoted-field` = rule {
-    '"' ~ clearSB() ~ zeroOrMore((QTEXTDATA | '"' ~ '"') ~ appendSB()) ~ '"' ~ OWS ~ push(sb.toString)
-  }
-
-  def `unquoted-field` = rule { capture(zeroOrMore(TEXTDATA)) }
-
-  def NL = rule { optional('\r') ~ '\n' ~ OWS }
-
-  def OWS = rule { zeroOrMore(' ') }
-}
 
 object ReadFile {
   def main (args: Array[String]):Unit = {
@@ -70,10 +46,5 @@ object ReadFile {
 
     val byteArray = Files.readAllBytes(Paths.get("testdata/metadata2000q1.csv"))
 
-    val parserInput = new ByteArrayBasedParserInput(byteArray)
-
-    val parser = CsvParser(parserInput,true,',')
-
-    println(parser)
   }
 }

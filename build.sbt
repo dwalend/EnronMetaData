@@ -21,8 +21,6 @@ resolvers += "Sonatype releases" at "http://oss.sonatype.org/content/repositorie
 
 //libraryDependencies += "com.github.verbalexpressions" %% "ScalaVerbalExpression" % "1.0.1" % "test" //for loading the Enron graph
 
-libraryDependencies += "org.parboiled" %% "parboiled" % "2.0.1"
-
 libraryDependencies += "net.walend" %% "scalagraphminimizer" % "0.1.1"
 
 fork in test := true
