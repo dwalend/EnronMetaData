@@ -8,6 +8,9 @@ package net.walend.enron
  * @author dwalend
  * @since v0.0.0
  */
+
+import org.parboiled2.ParserInput.ByteArrayBasedParserInput
+
 import scala.collection.immutable
 import org.parboiled2._
 
@@ -27,7 +30,7 @@ object CsvParser extends {
   }
 
   private val `TEXTDATA-BASE` = CharPredicate.Printable -- '"'
-  private val QTEXTDATA = `TEXTDATA-BASE` ++ "\r\n"
+  private val QTEXTDATA = `TEXTDATA-BASE` // ++ "\r\n"
 }
 
 /**
@@ -59,4 +62,18 @@ class CsvParser(val input: ParserInput, headerPresent: Boolean, fieldDelimiter: 
   def NL = rule { optional('\r') ~ '\n' ~ OWS }
 
   def OWS = rule { zeroOrMore(' ') }
+}
+
+object ReadFile {
+  def main (args: Array[String]):Unit = {
+    import java.nio.file.{Files, Paths}
+
+    val byteArray = Files.readAllBytes(Paths.get("testdata/metadata2000q1.csv"))
+
+    val parserInput = new ByteArrayBasedParserInput(byteArray)
+
+    val parser = CsvParser(parserInput,true,',')
+
+    println(parser)
+  }
 }
