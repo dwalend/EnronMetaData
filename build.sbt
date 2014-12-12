@@ -15,7 +15,7 @@ version := "0.0.0"
 
 isSnapshot := true
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.4"
 
 resolvers += "Sonatype releases" at "http://oss.sonatype.org/content/repositories/releases/"
 
