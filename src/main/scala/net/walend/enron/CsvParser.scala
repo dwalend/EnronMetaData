@@ -7,15 +7,12 @@ package net.walend.enron
  * @since v0.0.0
  */
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.io.Source
 
 object CsvParser {
 
-
-  //todo try rewrite with @tailreq
-  def parseLine(line:Int,input:String):Either[Problem,Message] = {
+  def parseLine(fileName:String,line:Int,input:String):Either[Problem,Message] = {
 
     //Scan through the string, looking for commas or double quotes. Build up the String in a StringBuffer.
     val strings = mutable.Buffer.empty[String]
@@ -30,14 +27,14 @@ object CsvParser {
       if(!quoted){
         if(char == '"') {
           quoted = true
-          if (builder.size != 0) Left(Problem(line,s"Doublequote does not follow a comma at $column in $input"))
+          if (builder.size != 0) Left(Problem(fileName,line,s"Doublequote does not follow a comma at $column in $input"))
         }
         else if(char == ',') {
           strings += builder.toString()
-          builder.clear
+          builder.clear()
           expectComma = false
         }
-        else if(expectComma) Left(Problem(line,s"Expected a comma at $column in $input"))
+        else if(expectComma) Left(Problem(fileName,line,s"Expected a comma at $column in $input"))
         else builder += char
       }
       else {
@@ -46,13 +43,17 @@ object CsvParser {
       }
 
     }
-    if(quoted) Left(Problem(line,s"Unclosed double quote in $input"))
+    if(quoted) Left(Problem(fileName,line,s"Unclosed double quote in $input"))
     else Message.create(line,strings)
   }
 
+  def linesToMessages(fileName:String,lines:Iterable[String]):Iterable[Either[Problem,Message]] = {
+    //start the line numbers at 2.
+    lines.zipWithIndex.map(x => (x._1,x._2+2)).map(x => CsvParser.parseLine(fileName,x._2,x._1))
+  }
 }
 
-case class Problem(line:Int,description:String)
+case class Problem(fileName:String,line:Int,description:String)
 
 case class Email(address:String)
 
@@ -89,15 +90,31 @@ object Message {
   }
 }
 
-object ReadFile {
+object ReadFiles {
   def main (args: Array[String]):Unit = {
 
-    //skip the first line -- column headers
-    val lines:Iterable[String] = Source.fromFile("testdata/metadata1999.csv").getLines().toIterable.drop(1)
-
     //start the line numbers at 2.
-    val results:Iterable[Either[Problem,Message]] = lines.zipWithIndex.map(x => (x._1,x._2+2)).map(x => CsvParser.parseLine(x._2,x._1))
+    val messages:Iterable[Either[Problem,Message]] = readFile("testdata/metadata1999.csv")
 
-    println(results.take(10).to[List].mkString("\n"))
+//    println(results.take(10).to[List].mkString("\n"))
+    val problems = messages.filter(_.isLeft)
+    println(problems.size)
+
+    val usableMessages:Iterable[Message] = messages.flatMap(_.right.toOption)
+
+    //todo first group by send time within an interval
+
+    //todo start here. (sender,recipient,count) triplets next.
+    val counts = usableMessages.groupBy(x => (x.sender,x.recipient)).map(x => (x._1,x._2.size)).toList.sortBy(_._2)
+
+    println(counts.mkString("\n"))
+  }
+
+  def readFile(fileName:String):Iterable[Either[Problem,Message]] = {
+
+    //skip the first line -- column headers
+    val lines:Iterable[String] = Source.fromFile(fileName).getLines().toIterable.drop(1)
+
+    CsvParser.linesToMessages(fileName,lines)
   }
 }
