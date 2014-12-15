@@ -12,7 +12,7 @@ import scala.io.Source
 
 object CsvParser {
 
-  def parseLine(fileName:String,line:Int,input:String):Either[Problem,Message] = {
+  def parseLine(fileName:String,line:Int,input:String):Either[Problem,Transmission] = {
 
     //Scan through the string, looking for commas or double quotes. Build up the String in a StringBuffer.
     val strings = mutable.Buffer.empty[String]
@@ -44,10 +44,10 @@ object CsvParser {
 
     }
     if(quoted) Left(Problem(fileName,line,s"Unclosed double quote in $input"))
-    else Message.create(line,strings)
+    else Transmission.create(line,strings)
   }
 
-  def linesToMessages(fileName:String,lines:Iterable[String]):Iterable[Either[Problem,Message]] = {
+  def linesToMessages(fileName:String,lines:Iterable[String]):Iterable[Either[Problem,Transmission]] = {
     //start the line numbers at 2.
     lines.zipWithIndex.map(x => (x._1,x._2+2)).map(x => CsvParser.parseLine(fileName,x._2,x._1))
   }
@@ -57,7 +57,7 @@ case class Problem(fileName:String,line:Int,description:String)
 
 case class Email(address:String)
 
-case class Message(lineNumber:Int,
+case class Transmission(lineNumber:Int,
                    dateTimeCode:Long,
                    sender:Email,
                    recipient:Email,
@@ -71,9 +71,9 @@ case class Message(lineNumber:Int,
                    ccLine:String) {
 }
 
-object Message {
-  def create(lineNumber:Int,lineContents:Seq[String]):Either[Problem,Message] = {
-    Right(Message(lineNumber = lineNumber,
+object Transmission {
+  def create(lineNumber:Int,lineContents:Seq[String]):Either[Problem,Transmission] = {
+    Right(Transmission(lineNumber = lineNumber,
       dateTimeCode = java.lang.Long.parseLong(lineContents(0))*1000,
       sender = Email(lineContents(1)),
       recipient = Email(lineContents(2)),
@@ -98,13 +98,13 @@ object ReadFiles {
 //    val files:Seq[File] = filesInDir("testdata")
     val files:Seq[File] = filesInDir("data/metadatatime")
 
-    val messages:Iterable[Either[Problem,Message]] = files.map(readFile).flatten
+    val messages:Iterable[Either[Problem,Transmission]] = files.map(readFile).flatten
 
 //    println(results.take(10).to[List].mkString("\n"))
     val problems = messages.filter(_.isLeft)
     println(problems.size)
 
-    val usableMessages:Iterable[Message] = messages.flatMap(_.right.toOption)
+    val usableMessages:Iterable[Transmission] = messages.flatMap(_.right.toOption)
 
     //todo first group by send time within an interval
 
@@ -118,7 +118,7 @@ object ReadFiles {
     new File(dirName).listFiles()
   }
 
-  def readFile(file:File):Iterable[Either[Problem,Message]] = {
+  def readFile(file:File):Iterable[Either[Problem,Transmission]] = {
 
     //skip the first line -- column headers
     val lines:Iterable[String] = Source.fromFile(file).getLines().toIterable.drop(1)
