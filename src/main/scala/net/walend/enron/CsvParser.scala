@@ -91,10 +91,14 @@ object Message {
 }
 
 object ReadFiles {
+  import java.io.File
+
   def main (args: Array[String]):Unit = {
 
-    //start the line numbers at 2.
-    val messages:Iterable[Either[Problem,Message]] = readFile("testdata/metadata1999.csv")
+//    val files:Seq[File] = filesInDir("testdata")
+    val files:Seq[File] = filesInDir("data/metadatatime")
+
+    val messages:Iterable[Either[Problem,Message]] = files.map(readFile).flatten
 
 //    println(results.take(10).to[List].mkString("\n"))
     val problems = messages.filter(_.isLeft)
@@ -110,11 +114,15 @@ object ReadFiles {
     println(counts.mkString("\n"))
   }
 
-  def readFile(fileName:String):Iterable[Either[Problem,Message]] = {
+  def filesInDir(dirName:String):Seq[File] = {
+    new File(dirName).listFiles()
+  }
+
+  def readFile(file:File):Iterable[Either[Problem,Message]] = {
 
     //skip the first line -- column headers
-    val lines:Iterable[String] = Source.fromFile(fileName).getLines().toIterable.drop(1)
+    val lines:Iterable[String] = Source.fromFile(file).getLines().toIterable.drop(1)
 
-    CsvParser.linesToMessages(fileName,lines)
+    CsvParser.linesToMessages(file.toString,lines)
   }
 }
