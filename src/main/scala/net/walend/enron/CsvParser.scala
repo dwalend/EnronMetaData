@@ -7,6 +7,8 @@ package net.walend.enron
  * @since v0.0.0
  */
 
+import java.nio.file.{Paths, Files}
+
 import scala.collection.mutable
 import scala.io.Source
 
@@ -44,12 +46,33 @@ object CsvParser {
 
     }
     if(quoted) Left(Problem(fileName,line,s"Unclosed double quote in $input"))
-    else Transmission.create(line,strings)
+    else Transmission.create(fileName,line,strings)
+  }
+
+  def debugParseLine(fileName:String,line:Int,input:String):Either[Problem,Transmission] = {
+    val result = parseLine(fileName,line,input)
+
+//    if(result.isLeft) println(result.left)
+
+    result
   }
 
   def linesToMessages(fileName:String,lines:Iterable[String]):Iterable[Either[Problem,Transmission]] = {
+    println(s"Started $fileName")
     //start the line numbers at 2.
-    lines.zipWithIndex.map(x => (x._1,x._2+2)).map(x => CsvParser.parseLine(fileName,x._2,x._1))
+    val results = lines.zipWithIndex.map(x => (x._1,x._2+2)).map(x => CsvParser.debugParseLine(fileName,x._2,x._1))
+
+//    val problems = results.flatMap(_.left.toOption)
+
+//    println(problems.mkString("\n"))
+
+    def possibleRelationshipsFilter(result:Either[Problem,Transmission]):Boolean = {
+      if(result.isLeft) true
+      else result.right.get.possibleRelationship
+    }
+    println(s"Finsihed $fileName")
+
+    results.filter(possibleRelationshipsFilter)
   }
 }
 
@@ -69,24 +92,37 @@ case class Transmission(lineNumber:Int,
                    dateLine:String,
                    toLine:String,
                    ccLine:String) {
+
+  lazy val totalRecipients = toLine.count(_ == '@') + ccLine.count(_ == '@')
+
+  def possibleRelationship = totalRecipients < 12
 }
 
 object Transmission {
-  def create(lineNumber:Int,lineContents:Seq[String]):Either[Problem,Transmission] = {
-    Right(Transmission(lineNumber = lineNumber,
-      dateTimeCode = java.lang.Long.parseLong(lineContents(0))*1000,
-      sender = Email(lineContents(1)),
-      recipient = Email(lineContents(2)),
-      subject = lineContents(3),
-      isTo = java.lang.Boolean.parseBoolean(lineContents(4)),
-      isCC = java.lang.Boolean.parseBoolean(lineContents(5)),
-      isBCC = java.lang.Boolean.parseBoolean(lineContents(6)),
-      messageURL = lineContents(7),
-      dateLine = lineContents(8),
-      toLine = lineContents(9),
-      ccLine = lineContents(10)
-    ))
-
+  def create(fileName:String,lineNumber:Int,lineContents:Seq[String]):Either[Problem,Transmission] = {
+    if (lineContents.size != 11) {
+      if (lineContents.size < 11) Left(Problem(fileName, lineNumber, s"Too few columns (${lineContents.size}) in $lineContents"))
+      else Left(Problem(fileName, lineNumber, s"Too many columns (${lineContents.size}) in $lineContents"))
+    }
+    else {
+      val sender = Email(lineContents(1))
+      val recipient = Email(lineContents(2))
+      if(!sender.address.contains('@')) Left(Problem(fileName,lineNumber,s"sender $sender does not contain a @"))
+      else if (!recipient.address.contains('@')) Left(Problem(fileName,lineNumber,s"recipient $recipient does not contain a @"))
+      else  Right(Transmission(lineNumber = lineNumber,
+                                dateTimeCode = java.lang.Long.parseLong(lineContents(0)) * 1000,
+                                sender = sender,
+                                recipient = recipient,
+                                subject = lineContents(3),
+                                isTo = java.lang.Boolean.parseBoolean(lineContents(4)),
+                                isCC = java.lang.Boolean.parseBoolean(lineContents(5)),
+                                isBCC = java.lang.Boolean.parseBoolean(lineContents(6)),
+                                messageURL = lineContents(7),
+                                dateLine = lineContents(8),
+                                toLine = lineContents(9),
+                                ccLine = lineContents(10)
+      ))
+    }
   }
 }
 
@@ -97,21 +133,35 @@ object ReadFiles {
 
 //    val files:Seq[File] = filesInDir("testdata")
     val files:Seq[File] = filesInDir("data/metadatatime")
+//    val files:Seq[File] = filesInDir("data/metadatatime-less")
+
 
     val messages:Iterable[Either[Problem,Transmission]] = files.map(readFile).flatten
 
 //    println(results.take(10).to[List].mkString("\n"))
-    val problems = messages.filter(_.isLeft)
-    println(problems.size)
+    val problems = messages.flatMap(_.left.toOption)
+    println(s"problem lines ${problems.size}")
+    println(problems.mkString("\n"))
 
     val usableMessages:Iterable[Transmission] = messages.flatMap(_.right.toOption)
 
+    val senderReceivers:Iterable[(Email,Email)] = usableMessages.map(x => (x.sender,x.recipient))
+
     //todo first group by send time within an interval
 
-    //todo start here. (sender,recipient,count) triplets next.
-    val counts = usableMessages.groupBy(x => (x.sender,x.recipient)).map(x => (x._1,x._2.size)).toList.sortBy(_._2)
+    val edges = usableMessages.groupBy(x => (x.sender,x.recipient)).map(x => (x._1,x._2.size)).toList.sortBy(_._2)
 
-    println(counts.mkString("\n"))
+    //val edges:Set[(Email,Email)] = senderReceivers.to[Set]
+
+    Files.write(Paths.get("results/edges.txt"),edges.mkString("\n").getBytes())
+
+    println(s"edges ${edges.size}")
+
+    val nodes:Set[Email] = (edges.map(x => x._1._1) ++ edges.map(x => x._1._2)).to[Set]
+    //val nodes:Set[Email] = edges.map(x => x._1) ++ edges.map(x => x._2)
+    println(s"nodes ${nodes.size}")
+
+
   }
 
   def filesInDir(dirName:String):Seq[File] = {
@@ -121,7 +171,7 @@ object ReadFiles {
   def readFile(file:File):Iterable[Either[Problem,Transmission]] = {
 
     //skip the first line -- column headers
-    val lines:Iterable[String] = Source.fromFile(file).getLines().toIterable.drop(1)
+    val lines:Iterable[String] = Source.fromFile(file,"iso-8859-1").getLines().toIterable.drop(1)
 
     CsvParser.linesToMessages(file.toString,lines)
   }

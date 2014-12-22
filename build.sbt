@@ -17,6 +17,8 @@ isSnapshot := true
 
 scalaVersion := "2.11.4"
 
+//javaHome := Some(new File("/Library/Java/JavaVirtualMachines/jdk1.8.0_05.jdk/Contents/Home"))
+
 resolvers += "Sonatype releases" at "http://oss.sonatype.org/content/repositories/releases/"
 
 //libraryDependencies += "com.github.verbalexpressions" %% "ScalaVerbalExpression" % "1.0.1" % "test" //for loading the Enron graph
@@ -30,6 +32,8 @@ javaOptions in test += "-server" //does hotspot optimizations earlier
 fork in run := true
 
 javaOptions in run += "-server" //does hotspot optimizations earlier
+
+javaOptions in run += "-Xmx4G" //default is at 1 GB for contemporary hardware
 
 scalacOptions ++= Seq("-unchecked", "-deprecation","-feature")
 
