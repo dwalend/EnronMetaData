@@ -22,12 +22,6 @@ class Problems(tag:Tag) extends Table[Problem](tag,"problems") {
 
 object Problems {
   lazy val table = TableQuery[Problems]
-
-  def write(problem:Problem):Unit = {
-    EnronDatabase.database.withSession{ implicit session =>
-      table.insert(problem)
-    }
-  }
 }
 
 case class Email(address:String)
@@ -123,12 +117,6 @@ class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
 
 object Transmissions {
   lazy val table = TableQuery[Transmissions]
-
-  def write(transmission: Transmission):Unit = {
-    EnronDatabase.database.withSession { implicit session =>
-      table.insert(transmission)
-    }
-  }
 }
 
 object EnronDatabase {
@@ -149,6 +137,17 @@ object EnronDatabase {
       Problems.table.ddl.create
       Transmissions.table.ddl.create
     }
+  }
+
+  def messagesToDatabase(messages:Iterable[Either[Problem,Transmission]]):Unit = {
+
+    database.withTransaction { implicit session =>
+      messages.map(_.fold(Problems.table.insert, Transmissions.table.insert))
+    }
+  }
+
+  def manyMessagesToDatabase(messages:Iterable[Either[Problem,Transmission]],blockSize:Int):Unit = {
+    messages.grouped(blockSize).map(messagesToDatabase)
   }
 
 }

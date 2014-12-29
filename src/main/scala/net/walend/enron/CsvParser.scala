@@ -88,7 +88,7 @@ object ReadFiles {
 
     val messages:Iterable[Either[Problem,Transmission]] = files.map(readFile).flatten
 
-    messages.map(_.fold(Problems.write,Transmissions.write))
+    EnronDatabase.manyMessagesToDatabase(messages,1000)
 
 //    println(results.take(10).to[List].mkString("\n"))
 //    val problems = messages.flatMap(_.left.toOption)
@@ -129,4 +129,6 @@ object ReadFiles {
 
     CsvParser.linesToMessages(file.toString,lines)
   }
+
+
 }
