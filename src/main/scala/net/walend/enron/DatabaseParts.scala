@@ -142,12 +142,23 @@ object EnronDatabase {
   def messagesToDatabase(messages:Iterable[Either[Problem,Transmission]]):Unit = {
 
     database.withTransaction { implicit session =>
-      messages.map(_.fold(Problems.table.insert, Transmissions.table.insert))
+      messages.foreach(_.fold(Problems.table.insert, Transmissions.table.insert))
     }
   }
 
   def manyMessagesToDatabase(messages:Iterable[Either[Problem,Transmission]],blockSize:Int):Unit = {
-    messages.grouped(blockSize).map(messagesToDatabase)
+    messages.grouped(blockSize).foreach(messagesToDatabase)
   }
 
+  def spewProblems():Unit = {
+    database.withTransaction { implicit session =>
+      Problems.table.foreach{case x => println(s".$x")}
+    }
+  }
+
+  def spewTransmissions():Unit = {
+    database.withTransaction { implicit session =>
+      Transmissions.table.foreach{case x => println(s".$x")}
+    }
+  }
 }

@@ -90,6 +90,10 @@ object ReadFiles {
 
     EnronDatabase.manyMessagesToDatabase(messages,1000)
 
+    EnronDatabase.spewProblems()
+
+//    EnronDatabase.spewTransmissions()
+
 //    println(results.take(10).to[List].mkString("\n"))
 //    val problems = messages.flatMap(_.left.toOption)
 //    println(s"problem lines ${problems.size}")
