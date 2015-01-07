@@ -4,6 +4,7 @@ import scala.slick.driver.H2Driver.simple._
 import scala.slick.jdbc.meta.MTable
 
 import scala.slick.lifted.ProvenShape
+import scala.slick.lifted.Query
 
 /**
  *
@@ -11,13 +12,25 @@ import scala.slick.lifted.ProvenShape
  * @author dwalend
  * @since v0.0.0
  */
-case class Problem(fileName:String,line:Int,description:String)
+case class Problem(fileName:String,line:Int,category:String,description:String)
+
+sealed case class Category(name:String)
+
+object Category {
+  val partialQuote = Category("Doublequote does not follow a comma")
+  val expectedCommaMissing = Category("Expected a comma")
+  val unclosedDoubleQuote = Category("Unclosed double quote")
+  val tooManyColumns = Category("Too many columns")
+  val tooFewColumns = Category("Too few columns")
+  val missingAt = Category("does not contain a @")
+}
 
 class Problems(tag:Tag) extends Table[Problem](tag,"problems") {
   def fileName = column[String]("fileName")
   def line = column[Int]("line")
+  def category = column[String]("category")
   def description = column[String]("description")
-  def * = (fileName,line,description) <> (Problem.tupled,Problem.unapply)
+  def * = (fileName,line,category,description) <> (Problem.tupled,Problem.unapply)
 }
 
 object Problems {
@@ -48,14 +61,14 @@ case class Transmission(fileName:String,
 object Transmission extends ((String,Int,Long,Email,Email,String,Boolean,Boolean,Boolean,String,String,String,String) => Transmission) {
   def create(fileName:String,lineNumber:Int,lineContents:Seq[String]):Either[Problem,Transmission] = {
     if (lineContents.size != 11) {
-      if (lineContents.size < 11) Left(Problem(fileName, lineNumber, s"Too few columns (${lineContents.size}) in $lineContents"))
-      else Left(Problem(fileName, lineNumber, s"Too many columns (${lineContents.size}) in $lineContents"))
+      if (lineContents.size < 11) Left(Problem(fileName, lineNumber,Category.tooFewColumns.name, s"(${lineContents.size}) in $lineContents"))
+      else Left(Problem(fileName, lineNumber,Category.tooManyColumns.name, s"(${lineContents.size}) in $lineContents"))
     }
     else {
       val sender = Email(lineContents(1))
       val recipient = Email(lineContents(2))
-      if(!sender.address.contains('@')) Left(Problem(fileName,lineNumber,s"sender $sender does not contain a @"))
-      else if (!recipient.address.contains('@')) Left(Problem(fileName,lineNumber,s"recipient $recipient does not contain a @"))
+      if(!sender.address.contains('@')) Left(Problem(fileName,lineNumber,Category.missingAt.name,s"sender $sender"))
+      else if (!recipient.address.contains('@')) Left(Problem(fileName,lineNumber,Category.missingAt.name,s"recipient $recipient"))
       else  Right(Transmission(fileName = fileName,
         lineNumber = lineNumber,
         dateTimeCode = java.lang.Long.parseLong(lineContents(0)) * 1000,
@@ -161,4 +174,11 @@ object EnronDatabase {
       Transmissions.table.foreach{case x => println(s".$x")}
     }
   }
+/*
+  def query[Problem](query:Query[Problems,Problem,Seq]):Seq[Problem] = {
+    database.withTransaction { implicit session =>
+      Problems.table.
+    }
+  }
+*/
 }

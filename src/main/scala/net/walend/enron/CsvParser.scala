@@ -9,7 +9,7 @@ package net.walend.enron
 
 import java.nio.file.{Paths, Files}
 
-import scala.collection.mutable
+import scala.collection.parallel.immutable.ParSeq
 import scala.io.Source
 
 object CsvParser {
@@ -17,7 +17,7 @@ object CsvParser {
   def parseLine(fileName:String,line:Int,input:String):Either[Problem,Transmission] = {
 
     //Scan through the string, looking for commas or double quotes. Build up the String in a StringBuffer.
-    val strings = mutable.Buffer.empty[String]
+    val strings = scala.collection.mutable.Buffer.empty[String]
 
     var quoted = false
     var expectComma = false
@@ -29,14 +29,14 @@ object CsvParser {
       if(!quoted){
         if(char == '"') {
           quoted = true
-          if (builder.size != 0) Left(Problem(fileName,line,s"Doublequote does not follow a comma at $column in $input"))
+          if (builder.size != 0) Left(Problem(fileName,line,Category.partialQuote.name,s"column $column in $input"))
         }
         else if(char == ',') {
           strings += builder.toString()
           builder.clear()
           expectComma = false
         }
-        else if(expectComma) Left(Problem(fileName,line,s"Expected a comma at $column in $input"))
+        else if(expectComma) Left(Problem(fileName,line,Category.expectedCommaMissing.name,s"column $column in $input"))
         else builder += char
       }
       else {
@@ -45,7 +45,7 @@ object CsvParser {
       }
 
     }
-    if(quoted) Left(Problem(fileName,line,s"Unclosed double quote in $input"))
+    if(quoted) Left(Problem(fileName,line,Category.unclosedDoubleQuote.name,s"Unclosed double quote in $input"))
     else Transmission.create(fileName,line,strings)
   }
 
@@ -84,11 +84,11 @@ object ReadFiles {
     EnronDatabase.clearAndCreateTables
 
     val files:Seq[File] = filesInDir("testdata")
-//    val files:Seq[File] = filesInDir("data/metadatatime")
+//    val files:Seq[File] = filesInDir("data/metadatatime").to[Seq]
 
-    val messages:Iterable[Either[Problem,Transmission]] = files.map(readFile).flatten
-
-    EnronDatabase.manyMessagesToDatabase(messages,1000)
+//    val messages:Iterable[Either[Problem,Transmission]] = files.map(readFile).flatten
+//    EnronDatabase.manyMessagesToDatabase(messages,1000)
+    files.par.map(fileToDb)
 
     EnronDatabase.spewProblems()
 
@@ -134,5 +134,9 @@ object ReadFiles {
     CsvParser.linesToMessages(file.toString,lines)
   }
 
+  def fileToDb(file:File):Unit = {
+    val messages = readFile(file)
+    EnronDatabase.manyMessagesToDatabase(messages,1000)
+  }
 
 }
