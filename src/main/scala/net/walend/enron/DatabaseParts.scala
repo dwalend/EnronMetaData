@@ -1,6 +1,7 @@
 package net.walend.enron
 
-import scala.slick.driver.H2Driver.simple._
+//import scala.slick.driver.H2Driver.simple._
+import scala.slick.driver.JdbcDriver.simple._
 import scala.slick.jdbc.meta.MTable
 
 import scala.slick.lifted.ProvenShape
@@ -99,8 +100,8 @@ class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
   def isBCC = column[Boolean]("isBCC")
   def messageURL = column[String]("messageURL")
   def dateLine = column[String]("dateLine")
-  def toLine = column[String]("toLine")
-  def ccLine = column[String]("ccLine")
+  def toLine = column[String]("toLine",O.DBType("VARCHAR(512)"))
+  def ccLine = column[String]("ccLine",O.DBType("VARCHAR(512)"))
   def totalRecipients = column[Int]("totalRecipients")
   def * :ProvenShape[Transmission] = (fileName,line,dateTimeCode,sender,recipient,subject,isTo,isCC,isBCC,messageURL,dateLine,toLine,ccLine,totalRecipients) <> (fromRow,toRow)
 
