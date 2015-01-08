@@ -27,7 +27,8 @@ libraryDependencies += "com.h2database" % "h2" % "1.4.184"
 
 libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "2.1.0",
-  "org.slf4j" % "slf4j-nop" % "1.6.4"
+//  "org.slf4j" % "slf4j-nop" % "1.6.4"
+  "org.slf4j" % "slf4j-simple" % "1.6.4"
 )
 
 

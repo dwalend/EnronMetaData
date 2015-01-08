@@ -123,6 +123,8 @@ object Transmissions {
 
 object EnronDatabase {
 
+  System.getProperties.put("scala.slick.session","DEBUG")
+
   val workingDirectory = System.getProperty("user.dir")
   val url = "jdbc:oracle:thin:@oracletestdb.cqma6h8xasfp.us-east-1.rds.amazonaws.com:1521:ORCL"
 
