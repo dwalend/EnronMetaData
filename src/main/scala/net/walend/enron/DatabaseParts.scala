@@ -92,7 +92,7 @@ class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
 //  def isBCC = column[Boolean]("isBCC")
   def messageURL = column[String]("messageURL")
   def dateLine = column[String]("dateLine")
-  def toLine = column[String]("toLine",O.DBType("VARCHAR(512)"))
+  def toLine = column[String]("toLine",O.DBType("VARCHAR(512)"),O.Nullable)
   def ccLine = column[String]("ccLine",O.DBType("VARCHAR(512)"),O.Nullable)
   def totalRecipients = column[Int]("totalRecipients")
   def * :ProvenShape[Transmission] = (fileName,line,sender,recipient,subject,messageURL,dateLine,toLine,ccLine,totalRecipients) <> (fromRow,toRow)
