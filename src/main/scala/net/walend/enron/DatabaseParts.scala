@@ -46,16 +46,14 @@ case class Transmission(fileName:String,
                         recipient:Email,
                         subject:String,
                         messageURL:String,
-                        dateLine:String,
-                        toLine:String,
-                        ccLine:String) {
+                        dateLine:String) {
 
-  lazy val totalRecipients = toLine.count(_ == '@') + ccLine.count(_ == '@')
+  lazy val totalRecipients = 0//toLine.count(_ == '@') + ccLine.count(_ == '@')
 
   def possibleRelationship = totalRecipients < 12
 }
 
-object Transmission extends ((String,Int,Email,Email,String,String,String,String,String) => Transmission) {
+object Transmission extends ((String,Int,Email,Email,String,String,String) => Transmission) {
   def create(fileName:String,lineNumber:Int,lineContents:Seq[String]):Either[Problem,Transmission] = {
     if (lineContents.size != 11) {
       if (lineContents.size < 11) Left(Problem(fileName, lineNumber,Category.tooFewColumns.name, s"(${lineContents.size}) in $lineContents"))
@@ -72,9 +70,7 @@ object Transmission extends ((String,Int,Email,Email,String,String,String,String
         recipient = recipient,
         subject = lineContents(3),
         messageURL = lineContents(7),
-        dateLine = lineContents(8),
-        toLine = lineContents(9),
-        ccLine = lineContents(10)
+        dateLine = lineContents(8)
       ))
     }
   }
@@ -92,10 +88,10 @@ class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
 //  def isBCC = column[Boolean]("isBCC")
   def messageURL = column[String]("messageURL")
   def dateLine = column[String]("dateLine")
-  def toLine = column[String]("toLine",O.DBType("VARCHAR(512)"),O.Nullable)
-  def ccLine = column[String]("ccLine",O.DBType("VARCHAR(512)"),O.Nullable)
+//  def toLine = column[String]("toLine",O.DBType("VARCHAR(512)"),O.Nullable)
+//  def ccLine = column[String]("ccLine",O.DBType("VARCHAR(512)"),O.Nullable)
   def totalRecipients = column[Int]("totalRecipients")
-  def * :ProvenShape[Transmission] = (fileName,line,sender,recipient,subject,messageURL,dateLine,toLine,ccLine,totalRecipients) <> (fromRow,toRow)
+  def * :ProvenShape[Transmission] = (fileName,line,sender,recipient,subject,messageURL,dateLine,totalRecipients) <> (fromRow,toRow)
 
   def fromRow = (fromParams _).tupled
 
@@ -106,14 +102,12 @@ class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
                   subject:String,
                   messageURL:String,
                   dateLine:String,
-                  toLine:String,
-                  ccLine:String,
                   totalRecipients:Int):Transmission = {
-    Transmission(fileName,line,Email(sender),Email(recipient),subject,messageURL,dateLine,toLine,ccLine)
+    Transmission(fileName,line,Email(sender),Email(recipient),subject,messageURL,dateLine)
   }
 
   def toRow(t:Transmission) = {
-    Some((t.fileName,t.lineNumber,t.sender.address,t.recipient.address,t.subject,t.messageURL,t.dateLine,t.toLine,t.ccLine,t.totalRecipients))
+    Some((t.fileName,t.lineNumber,t.sender.address,t.recipient.address,t.subject,t.messageURL,t.dateLine,t.totalRecipients))
   }
 }
 
