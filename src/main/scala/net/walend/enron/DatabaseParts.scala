@@ -137,11 +137,13 @@ object EnronDatabase {
   def clearAndCreateTables = {
     database.withSession{ implicit session =>
 //      if (MTable.getTables("problems").list.nonEmpty) {
-        Problems.table.ddl.drop
-//      }
+        try {
+          Problems.table.ddl.drop
+        } catch {case x:java.sql.SQLSyntaxErrorException => }
 //      if (MTable.getTables("transmissions").list.nonEmpty) {
-//        Transmissions.table.ddl.drop
-//      }
+        try {
+        Transmissions.table.ddl.drop
+        } catch {case x:java.sql.SQLSyntaxErrorException => }
 
       Problems.table.ddl.create
       Transmissions.table.ddl.create
