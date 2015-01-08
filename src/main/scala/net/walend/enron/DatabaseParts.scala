@@ -137,7 +137,8 @@ object EnronDatabase {
 
   val workingDirectory = System.getProperty("user.dir")
 //  val database = Database.forURL("jdbc:h2:mem:enron", driver = "org.h2.Driver")
-  val database = Database.forURL(s"jdbc:h2:$workingDirectory/results/enron.h2:enron", driver = "org.h2.Driver")
+//val database = Database.forURL(s"jdbc:h2:$workingDirectory/results/enron.h2:enron", driver = "org.h2.Driver")
+  val database = Database.forURL(s"oracletestdb.cqma6h8xasfp.us-east-1.rds.amazonaws.com:1521/ORCL", driver = "oracle.jdbc.driver.OracleDriver", user = "test", password = "yodler42")
 
   def clearAndCreateTables = {
     database.withSession{ implicit session =>
