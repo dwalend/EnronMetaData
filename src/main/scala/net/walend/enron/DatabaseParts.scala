@@ -132,12 +132,12 @@ object EnronDatabase {
 
   def clearAndCreateTables = {
     database.withSession{ implicit session =>
-      if (MTable.getTables("problems").list.nonEmpty) {
+//      if (MTable.getTables("problems").list.nonEmpty) {
         Problems.table.ddl.drop
-      }
-      if (MTable.getTables("transmissions").list.nonEmpty) {
+//      }
+//      if (MTable.getTables("transmissions").list.nonEmpty) {
         Transmissions.table.ddl.drop
-      }
+//      }
 
       Problems.table.ddl.create
       Transmissions.table.ddl.create
@@ -147,7 +147,14 @@ object EnronDatabase {
   def messagesToDatabase(messages:Iterable[Either[Problem,Transmission]]):Unit = {
 
     database.withTransaction { implicit session =>
-      messages.foreach(_.fold(Problems.table.insert, Transmissions.table.insert))
+      messages.foreach(_.fold(Problems.table.insert, insertTransmission))
+    }
+  }
+
+  def insertTransmission(t:Transmission) = {
+    println(t)
+    database.withTransaction { implicit session =>
+      Transmissions.table.insert(t)
     }
   }
 
