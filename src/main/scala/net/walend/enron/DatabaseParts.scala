@@ -140,7 +140,7 @@ object EnronDatabase {
         Problems.table.ddl.drop
 //      }
 //      if (MTable.getTables("transmissions").list.nonEmpty) {
-        Transmissions.table.ddl.drop
+//        Transmissions.table.ddl.drop
 //      }
 
       Problems.table.ddl.create
