@@ -21,8 +21,6 @@ scalaVersion := "2.11.4"
 
 resolvers += "Sonatype releases" at "http://oss.sonatype.org/content/repositories/releases/"
 
-//libraryDependencies += "com.github.verbalexpressions" %% "ScalaVerbalExpression" % "1.0.1" % "test" //for loading the Enron graph
-
 libraryDependencies += "net.walend" %% "scalagraphminimizer" % "0.1.1"
 
 libraryDependencies += "com.h2database" % "h2" % "1.4.184"
@@ -31,6 +29,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "2.1.0",
   "org.slf4j" % "slf4j-nop" % "1.6.4"
 )
+
+
 
 fork in test := true
 
