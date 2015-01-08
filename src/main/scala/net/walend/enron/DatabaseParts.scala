@@ -42,7 +42,6 @@ case class Email(address:String)
 
 case class Transmission(fileName:String,
                         lineNumber:Int,
-                        dateTimeCode:Long,
                         sender:Email,
                         recipient:Email,
                         subject:String,
@@ -56,7 +55,7 @@ case class Transmission(fileName:String,
   def possibleRelationship = totalRecipients < 12
 }
 
-object Transmission extends ((String,Int,Long,Email,Email,String,String,String,String,String) => Transmission) {
+object Transmission extends ((String,Int,Email,Email,String,String,String,String,String) => Transmission) {
   def create(fileName:String,lineNumber:Int,lineContents:Seq[String]):Either[Problem,Transmission] = {
     if (lineContents.size != 11) {
       if (lineContents.size < 11) Left(Problem(fileName, lineNumber,Category.tooFewColumns.name, s"(${lineContents.size}) in $lineContents"))
@@ -69,7 +68,6 @@ object Transmission extends ((String,Int,Long,Email,Email,String,String,String,S
       else if (!recipient.address.contains('@')) Left(Problem(fileName,lineNumber,Category.missingAt.name,s"recipient $recipient"))
       else  Right(Transmission(fileName = fileName,
         lineNumber = lineNumber,
-        dateTimeCode = java.lang.Long.parseLong(lineContents(0)) * 1000,
         sender = sender,
         recipient = recipient,
         subject = lineContents(3),
@@ -85,7 +83,7 @@ object Transmission extends ((String,Int,Long,Email,Email,String,String,String,S
 class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
   def fileName = column[String]("fileName")
   def line = column[Int]("line")
-  def dateTimeCode = column[Long]("time")
+//  def dateTimeCode = column[Long]("time")
   def sender = column[String]("sender")
   def recipient = column[String]("recipient")
   def subject = column[String]("subject")
@@ -97,13 +95,12 @@ class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
   def toLine = column[String]("toLine",O.DBType("VARCHAR(512)"))
   def ccLine = column[String]("ccLine",O.DBType("VARCHAR(512)"))
   def totalRecipients = column[Int]("totalRecipients")
-  def * :ProvenShape[Transmission] = (fileName,line,dateTimeCode,sender,recipient,subject,messageURL,dateLine,toLine,ccLine,totalRecipients) <> (fromRow,toRow)
+  def * :ProvenShape[Transmission] = (fileName,line,sender,recipient,subject,messageURL,dateLine,toLine,ccLine,totalRecipients) <> (fromRow,toRow)
 
   def fromRow = (fromParams _).tupled
 
   def fromParams(fileName:String,
                   line:Int,
-                  dateTimeCode:Long,
                   sender:String,
                   recipient:String,
                   subject:String,
@@ -112,11 +109,11 @@ class Transmissions(tag:Tag) extends Table[Transmission](tag,"transmissions") {
                   toLine:String,
                   ccLine:String,
                   totalRecipients:Int):Transmission = {
-    Transmission(fileName,line,dateTimeCode,Email(sender),Email(recipient),subject,messageURL,dateLine,toLine,ccLine)
+    Transmission(fileName,line,Email(sender),Email(recipient),subject,messageURL,dateLine,toLine,ccLine)
   }
 
   def toRow(t:Transmission) = {
-    Some((t.fileName,t.lineNumber,t.dateTimeCode,t.sender.address,t.recipient.address,t.subject,t.messageURL,t.dateLine,t.toLine,t.ccLine,t.totalRecipients))
+    Some((t.fileName,t.lineNumber,t.sender.address,t.recipient.address,t.subject,t.messageURL,t.dateLine,t.toLine,t.ccLine,t.totalRecipients))
   }
 }
 
