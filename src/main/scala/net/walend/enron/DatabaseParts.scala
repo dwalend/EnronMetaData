@@ -174,6 +174,20 @@ object EnronDatabase {
       Transmissions.table.foreach{case x => println(s".$x")}
     }
   }
+
+  def extractTransmissionCounts():Seq[(String,String,Int)] = {
+
+    database.withTransaction { implicit session =>
+//      val result:Iterator[(Email)] = Transmissions.table.groupBy(x => (x.sender,x.recipient)).iterator.map(x => x.sender)
+//      val result:Iterator[(Email)] = Transmissions.table.iterator.map(x => x.sender)
+      val senderReceiver:Iterator[(Email,Email)] = Transmissions.table.filter(x => x.totalRecipients <= 12).iterator.map(x => (x.sender,x.recipient))
+
+      val result:Map[(Email,Email),Int] = senderReceiver.to[Seq].groupBy(x => x).map(y => (y._1,y._2.size))
+
+      result.to[Seq].map(x => (x._1._1.address,x._1._2.address,x._2)).sortBy(_._3).reverse
+    }
+  }
+
 /*
   def query[Problem](query:Query[Problems,Problem,Seq]):Seq[Problem] = {
     database.withTransaction { implicit session =>
